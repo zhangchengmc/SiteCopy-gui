@@ -404,35 +404,109 @@ def ExtractUrls(main_url, depth = 200, threads = 30):
 	print("\n[Info] - Getting source and resources for each page...")
 	results = coroutine_init(SaveSinglePage, parameters=urls, threads=threads)
 
+def start_gui():
+    import tkinter as tk
+    from tkinter import ttk, messagebox, scrolledtext
+    import threading
+
+    def log_message(message):
+        log_text.config(state=tk.NORMAL)
+        log_text.insert(tk.END, message + "\n")
+        log_text.config(state=tk.DISABLED)
+        log_text.see(tk.END)
+
+    def download():
+        url = url_entry.get()
+        if not url:
+            messagebox.showwarning("警告", "URL不能为空")
+            return
+
+        try:
+            depth = int(depth_entry.get())
+        except ValueError:
+            messagebox.showwarning("警告", "深度必须是整数")
+            return
+
+        try:
+            threads = int(threads_entry.get())
+        except ValueError:
+            messagebox.showwarning("警告", "线程数必须是整数")
+            return
+
+        entire = entire_var.get()
+
+        def run_download():
+            if entire:
+                ExtractUrls(url, depth, threads)
+            else:
+                SaveSinglePage(url)
+            messagebox.showinfo("完成", "所有资源已下载")
+
+        threading.Thread(target=run_download).start()
+
+    root = tk.Tk()
+    root.title("SiteCopy GUI")
+
+    frame = ttk.Frame(root, padding="10")
+    frame.grid(row=0, column=0, sticky=(tk.W, tk.E, tk.N, tk.S))
+
+    ttk.Label(frame, text="URL:").grid(column=0, row=0, padx=10, pady=10, sticky=tk.W)
+    url_entry = ttk.Entry(frame, width=50)
+    url_entry.grid(column=1, row=0, padx=10, pady=10, sticky=tk.E)
+
+    ttk.Label(frame, text="深度:").grid(column=0, row=1, padx=10, pady=10, sticky=tk.W)
+    depth_entry = ttk.Entry(frame, width=10)
+    depth_entry.grid(column=1, row=1, padx=10, pady=10, sticky=tk.E)
+    depth_entry.insert(0, "200")
+
+    ttk.Label(frame, text="线程数:").grid(column=0, row=2, padx=10, pady=10, sticky=tk.W)
+    threads_entry = ttk.Entry(frame, width=10)
+    threads_entry.grid(column=1, row=2, padx=10, pady=10, sticky=tk.E)
+    threads_entry.insert(0, "30")
+
+    entire_var = tk.BooleanVar()
+    entire_check = ttk.Checkbutton(frame, text="下载整个网站", variable=entire_var)
+    entire_check.grid(column=1, row=3, padx=10, pady=10, sticky=tk.W)
+
+    download_button = ttk.Button(frame, text="开始下载", command=download)
+    download_button.grid(column=1, row=4, padx=10, pady=10, sticky=tk.E)
+
+    log_text = scrolledtext.ScrolledText(root, state=tk.DISABLED, width=80, height=20)
+    log_text.grid(row=1, column=0, padx=20, pady=20)
+
+    root.mainloop()
+
 if __name__ == "__main__":
+    args = parse_args()
+    if len(sys.argv) > 1:
+        print(Welcome)
+        print(Information)
+        print(Help)
 
-	print(Welcome)
-	print(Information)
-	print(Help)
-
-	args = parse_args()
-	if args.urls == None:
-		if args.url == None:
-			print("Please enter a url. \n Example: python -u 'http://www.threezh1.com/'")
-			exit()
-		if args.entire == True:
-			depth = 200
-			threads = 30
-			if args.depth != None: depth = int(args.depth)
-			if args.threads != None: threads = int(args.threads)
-			ExtractUrls(args.url, depth, threads)
-		elif args.entire == False:
-			SaveSinglePage(args.url)
-		print("\n[Info] - All resources have been downloaded")
-	else:
-		with open(args.urls, "r", encoding="utf-8") as fobject:
-			urls = fobject.read().split("\n")
-		for url in urls:
-			if args.entire == True:
-				depth = 200
-				threads = 30
-				if args.depth != None: depth = int(args.depth)
-				if args.threads != None: threads = int(args.threads)
-				ExtractUrls(url, depth, threads)
-			elif args.entire == False:
-				SaveSinglePage(url)
+        if args.urls == None:
+            if args.url == None:
+                print("Please enter a url. \n Example: python -u 'http://www.threezh1.com/'")
+                exit()
+            if args.entire == True:
+                depth = 200
+                threads = 30
+                if args.depth != None: depth = int(args.depth)
+                if args.threads != None: threads = int(args.threads)
+                ExtractUrls(args.url, depth, threads)
+            elif args.entire == False:
+                SaveSinglePage(args.url)
+            print("\n[Info] - All resources have been downloaded")
+        else:
+            with open(args.urls, "r", encoding="utf-8") as fobject:
+                urls = fobject.read().split("\n")
+            for url in urls:
+                if args.entire == True:
+                    depth = 200
+                    threads = 30
+                    if args.depth != None: depth = int(args.depth)
+                    if args.threads != None: threads = int(args.threads)
+                    ExtractUrls(url, depth, threads)
+                elif args.entire == False:
+                    SaveSinglePage(url)
+    else:
+        start_gui()
